@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Muhammad Syarifudin – Portfolio</title>
+    <title>{{ name }} – Portfolio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -12,9 +12,10 @@
 <body>
     <header class="site-header">
         <div class="container">
-            <a href="#profile" class="brand">Syarif</a>
+            <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
             <nav>
-                <a href="#profile">Profile</a>
+                <a href="{% url 'main:show_main' %}">Profile</a>
+                <a href="{% url 'main:show_experience' %}">Experience</a>
             </nav>
         </div>
     </header>
@@ -24,22 +25,22 @@
             <div class="container hero-grid">
                 <div class="hero-identity">
                     <p class="hero-kicker">Computer Science &middot; Universitas Indonesia</p>
-                    <h1>Muhammad Syarifudin</h1>
+                    <h1>{{ name }}</h1>
                 </div>
                 <div class="hero-photo">
                     <div class="photo-block"></div>
-                    <img class="avatar" src="/static/img/syarif.png" alt="Photo of Muhammad Syarifudin">
+                    <img class="avatar" src="/static/img/syarif.png" alt="Photo of {{ name }}">
                 </div>
                 <div class="hero-details">
-                    <p class="bio">Passionate Computer Science student exploring full-stack web development and AI. Dedicated to building innovative software solutions.</p>
+                    <p class="bio">{{ bio }}</p>
                     <dl class="meta-list">
                         <div class="meta-row">
                             <dt>NPM</dt>
-                            <dd>2506657112</dd>
+                            <dd>{{ npm }}</dd>
                         </div>
                         <div class="meta-row">
                             <dt>Program</dt>
-                            <dd>S1 Ilmu Komputer</dd>
+                            <dd>{{ study_program }}</dd>
                         </div>
                     </dl>
                     <div class="social-links">
@@ -51,7 +52,7 @@
             </div>
         </section>
 
-        <!-- Section Skills Baru -->
+        <!-- Section Skills -->
         <section class="section-container" id="skills">
             <div class="container">
                 <h2 class="section-title">Technical Skills</h2>
@@ -72,7 +73,7 @@
             </div>
         </section>
 
-        <!-- Section Projects Baru -->
+        <!-- Section Projects -->
         <section class="section-container" id="projects">
             <div class="container">
                 <h2 class="section-title">Recent Projects</h2>
@@ -96,7 +97,7 @@
 
     <footer class="site-footer">
         <div class="container">
-            <p>&copy; 2026 Muhammad Syarifudin. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+            <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
         </div>
     </footer>
 </body>
