@@ -15,3 +15,26 @@ Bio : Mahasiswa S1 Ilmu Komputer Universitas Indonesia yang antusias dalam bidan
 
 3. Website yang Anda buat saat ini adalah static web murni. Batasan apa yang Anda rasakan saat mencoba menyajikan informasi pada portofolio Anda secara optimal? Berdasarkan batasan tersebut, fungsionalitas dinamis apa yang paling ingin Anda persiapkan dan tambahkan pada iterasi proyek selanjutnya?
    > Batasan utamanya adalah keharusan memodifikasi kode HTML secara manual setiap kali ingin memperbarui data atau menambahkan proyek baru. Pada iterasi proyek selanjutnya, saya ingin menambahkan fungsionalitas dinamis menggunakan database relasional dan kerangka kerja *backend* (Django) sehingga data portofolio dapat dikelola secara dinamis melalui sistem CRUD tanpa harus mengubah struktur kode sumber HTML secara manual.
+
+### Tugas 2
+
+1. **Alur Pengaksesan Halaman Portofolio Baru:**
+   - **Browser -> `portofolio/urls.py`**: Mengarahkan permintaan utama ke aplikasi `main`.
+   - **`main/urls.py`**: Memetakan path `/projects/` ke fungsi view `show_project`.
+   - **`main/views.py` (`show_project`)**: Memanggil `Project.objects.all()` dari **Model** untuk mengambil seluruh data proyek dari database.
+   - **Model (`main/models.py`)**: Mengkueri database SQLite/PostgreSQL dan mengembalikan QuerySet berisi data proyek.
+   - **View -> Template**: View menyusun dictionary `context` berisi data tersebut dan merendernya bersama `templates/project.html`.
+   - **Template**: Django Template Language (DTL) me-loop `context` dan merender elemen HTML akhir yang dikirimkan kembali ke **Browser**.
+
+2. **Mengapa Data Harus Disimpan di Model (Tidak Hard-coded di Template)?**
+   - **Kemudahan Pemeliharaan (*Maintainability*)**: Jika data berubah, kita cukup memperbarui database melalui admin panel atau API tanpa perlu mengubah kode HTML dan melakukan re-deploy aplikasi.
+   - **Pemisahan Tanggung Jawab (*Separation of Concerns*)**: Menjaga template fokus pada tampilan (UI) dan menyerahkan pengelolaan data bisnis sepenuhnya kepada Model.
+   - **Skalabilitas**: Memungkinkan integrasi fitur seperti pencarian, penyaringan (filtering), pagination, serta manipulasi data secara dinamis.
+
+3. **Perbedaan `makemigrations` dan `migrate` pada Django:**
+   - **`makemigrations`**: Bertugas mendeteksi perubahan pada berkas `models.py` dan membuat berkas cetak biru instruksi migrasi baru di folder `migrations/`. Perintah ini belum mengubah struktur tabel basis data secara nyata.
+   - **`migrate`**: Bertugas mengeksekusi berkas cetak biru migrasi yang belum terapkan ke dalam basis data (database) aktual sehingga tabel atau kolom baru benar-benar dibuat/diubah.
+   - **Contoh kondisi**: Ketika menambahkan model baru `Project` atau menambahkan field baru pada model yang sudah ada, kita wajib menjalankan `makemigrations` terlebih dahulu lalu diikuti dengan `migrate`.
+
+---
+*AI Disclosure: Pembuatan skrip unit test dan draf jawaban reflektif dipandu menggunakan Gemini AI.*
