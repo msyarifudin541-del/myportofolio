@@ -36,5 +36,5 @@ Bio : Mahasiswa S1 Ilmu Komputer Universitas Indonesia yang antusias dalam bidan
    - **`migrate`**: Bertugas mengeksekusi berkas cetak biru migrasi yang belum terapkan ke dalam basis data (database) aktual sehingga tabel atau kolom baru benar-benar dibuat/diubah.
    - **Contoh kondisi**: Ketika menambahkan model baru `Project` atau menambahkan field baru pada model yang sudah ada, kita wajib menjalankan `makemigrations` terlebih dahulu lalu diikuti dengan `migrate`.
 
----
+-----
 *AI Disclosure: Pembuatan skrip unit test dan draf jawaban reflektif dipandu menggunakan Gemini AI.*
