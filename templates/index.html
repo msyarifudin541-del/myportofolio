@@ -1,79 +1,108 @@
 {% extends "base.html" %}
-
 {% block meta %}
-<title>{{ name }} – Portfolio</title>
+<title>Profile – {{ name }}</title>
 {% endblock meta %}
 
 {% block content %}
 <main>
-    <section class="hero" id="profile">
+    <!-- Hero Section -->
+    <section class="hero">
         <div class="container hero-grid">
             <div class="hero-identity">
-                <p class="hero-kicker">Computer Science &middot; Universitas Indonesia</p>
+                <p class="hero-kicker">{{ study_program }} · UNIVERSITAS INDONESIA</p>
                 <h1>{{ name }}</h1>
             </div>
+
             <div class="hero-photo">
                 <div class="photo-block"></div>
-                <img class="avatar" src="/static/img/syarif.png" alt="Photo of {{ name }}">
+                <img src="/static/img/syarif.png" alt="{{ name }}" class="avatar">
             </div>
+
             <div class="hero-details">
                 <p class="bio">{{ bio }}</p>
+
                 <dl class="meta-list">
                     <div class="meta-row">
                         <dt>NPM</dt>
                         <dd>{{ npm }}</dd>
                     </div>
                     <div class="meta-row">
-                        <dt>Program</dt>
+                        <dt>PROGRAM</dt>
                         <dd>{{ study_program }}</dd>
                     </div>
                 </dl>
+
                 <div class="social-links">
-                    <a href="https://github.com/msyarifudin541-del" class="social-link">GitHub</a>
-                    <a href="https://www.linkedin.com/in/muhammad-syarifudin-201822324" class="social-link">LinkedIn</a>
+                    <a href="https://github.com/syarifufufu" target="_blank" class="social-link">GitHub</a>
+                    <a href="https://linkedin.com" target="_blank" class="social-link">LinkedIn</a>
                     <a href="mailto:m.syarifudin541@gmail.com" class="social-link">Email</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Section Skills -->
+    <!-- Technical Skills Section -->
     <section class="section-container" id="skills">
         <div class="container">
             <h2 class="section-title">Technical Skills</h2>
             <div class="skills-grid">
-                <div class="skill-card">
+                <article class="skill-card">
                     <h3>Full-Stack Development</h3>
                     <p>HTML5, CSS3, JavaScript, TypeScript, React, Next.js, Node.js, Express, Prisma, SQL.</p>
-                </div>
-                <div class="skill-card">
+                </article>
+                <article class="skill-card">
                     <h3>AI & Cloud Analytics</h3>
-                    <p>Google Gemini, Microsoft Fabric, Azure AI Foundry.</p>
-                </div>
-                <div class="skill-card">
+                    <p>Google Gemini, Microsoft Fabric, Azure AI Foundry, Machine Learning, Data Wrangler.</p>
+                </article>
+                <article class="skill-card">
                     <h3>Design & Tools</h3>
                     <p>Canva, Figma, UI/UX Prototyping, Git, Responsive Web Design.</p>
-                </div>
+                </article>
             </div>
         </div>
     </section>
 
-    <!-- Section Projects -->
-    <section class="section-container" id="projects">
+    <!-- Education Section -->
+    <section class="section-container" id="education">
         <div class="container">
-            <h2 class="section-title">Recent Projects</h2>
+            <p class="section-kicker">Latar Belakang Akademis</p>
+            <h2 class="section-title">Education</h2>
+            <div class="skills-grid">
+                <article class="skill-card">
+                    <h3>Computer Science</h3>
+                    <p><strong>Universitas Indonesia</strong> (2025 – Present)</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.4rem;">Fakultas Ilmu Komputer (Fasilkom UI)</p>
+                </article>
+                <article class="skill-card">
+                    <h3>Geomatics Engineering</h3>
+                    <p><strong>Institut Teknologi Sepuluh Nopember (ITS)</strong> (2024 – 2025)</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.4rem;">Faculty of Civil, Planning and Geo Engineering</p>
+                </article>
+                <article class="skill-card">
+                    <h3>High School Diploma</h3>
+                    <p><strong>Lazuardi High School</strong> (2021 – 2024)</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Awards Section -->
+    <section class="section-container" id="awards">
+        <div class="container">
+            <p class="section-kicker">Pencapaian & Penghargaan</p>
+            <h2 class="section-title">Awards & Honors</h2>
             <div class="projects-flex">
-                <article class="project-card">
-                    <h3>SmartBin Edu IoT Project</h3>
-                    <p>Mengembangkan proyek IoT menggunakan mikrokontroler ESP8266 dan sensor ultrasonik untuk pemantauan kapasitas sampah real-time.</p>
+                <article class="skill-card">
+                    <h3>🥇 Gold Medal & Grand Award</h3>
+                    <p><strong>Global Competition for Life Sciences</strong> (2021)</p>
                 </article>
-                <article class="project-card">
-                    <h3>NutriMatch Health-Tech UI/UX</h3>
-                    <p>Merancang platform seluler interaktif untuk meningkatkan literasi nutrisi dan mengatasi stunting, meraih posisi Semi-finalist HEALTECH National IEEE ITSK.</p>
+                <article class="skill-card">
+                    <h3>🥈 Silver Medal</h3>
+                    <p><strong>Youth International Science Fair</strong> (2022)</p>
                 </article>
-                <article class="project-card">
-                    <h3>Pacilthon Splash Run 2025</h3>
-                    <p>Merancang aset visual, konsep medali, dan banner acara untuk departemen olahraga BEM Fasilkom UI.</p>
+                <article class="skill-card">
+                    <h3>📄 Scientific Paper Author</h3>
+                    <p><em>"The Effect of a Mixture of Local Microorganisms from Used Rice and Rice Washing Water as an Alternative Liquid Organic Fertilizer on the Growth of Water Spinach Plants"</em> (2022)</p>
                 </article>
             </div>
         </div>
