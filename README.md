@@ -16,6 +16,8 @@ Bio : Mahasiswa S1 Ilmu Komputer Universitas Indonesia yang antusias dalam bidan
 3. Website yang Anda buat saat ini adalah static web murni. Batasan apa yang Anda rasakan saat mencoba menyajikan informasi pada portofolio Anda secara optimal? Berdasarkan batasan tersebut, fungsionalitas dinamis apa yang paling ingin Anda persiapkan dan tambahkan pada iterasi proyek selanjutnya?
    > Batasan utamanya adalah keharusan memodifikasi kode HTML secara manual setiap kali ingin memperbarui data atau menambahkan proyek baru. Pada iterasi proyek selanjutnya, saya ingin menambahkan fungsionalitas dinamis menggunakan database relasional dan kerangka kerja *backend* (Django) sehingga data portofolio dapat dikelola secara dinamis melalui sistem CRUD tanpa harus mengubah struktur kode sumber HTML secara manual.
 
+---
+
 ### Tugas 2
 
 1. **Alur Pengaksesan Halaman Portofolio Baru:**
@@ -36,5 +38,28 @@ Bio : Mahasiswa S1 Ilmu Komputer Universitas Indonesia yang antusias dalam bidan
    - **`migrate`**: Bertugas mengeksekusi berkas cetak biru migrasi yang belum terapkan ke dalam basis data (database) aktual sehingga tabel atau kolom baru benar-benar dibuat/diubah.
    - **Contoh kondisi**: Ketika menambahkan model baru `Project` atau menambahkan field baru pada model yang sudah ada, kita wajib menjalankan `makemigrations` terlebih dahulu lalu diikuti dengan `migrate`.
 
------
-*AI Disclosure: Pembuatan skrip unit test dan draf jawaban reflektif dipandu menggunakan Gemini AI.*
+---
+
+### Tugas 3
+
+1. **Jelaskan mengapa kita menggunakan ModelForm pada Django alih-alih membuat form HTML secara manual. Selain itu, jelaskan pula mengapa kita diwajibkan menambahkan `{% csrf_token %}` pada form tersebut!**
+   > * **Penggunaan ModelForm:** `ModelForm` secara otomatis membangun form HTML berdasarkan skema model Django yang sudah ada. Menggunakan `ModelForm` mengurangi penulisan kode berulang (*boilerplate*), menangani validasi tipe data secara otomatis di sisi server, serta mengamankan dan menyederhanakan proses penyimpanan data ke database via metode `.save()`.
+   > * **Kewajiban `{% csrf_token %}`:** Tag ini menghasilkan *token rahasia* unik untuk mencegah serangan *Cross-Site Request Forgery* (CSRF). Token ini memastikan bahwa permintaan *POST* yang dikirimkan ke server benar-benar berasal dari pengguna sah melalui form aplikasi kita, bukan dari situs berbahaya pihak ketiga.
+
+2. **Pada Tutorial 03, kita membahas format data JSON dan XML. Mengapa JSON lebih disukai dalam pengembangan aplikasi web modern dibandingkan XML?**
+   > * **Ukuran Data Lebih Ringkas:** JSON menggunakan sintaks pasangan *key-value* yang jauh lebih bersih tanpa penutup tag bertumpuk seperti pada XML, sehingga memperkecil ukuran payload transfer data.
+   > * **Kecepatan Parsing Native:** JSON berformat *native* JavaScript sehingga dapat di-parse secara instan oleh browser menggunakan `JSON.parse()`, sedangkan XML memerlukan *DOM Parser* yang relatif lebih berat.
+   > * **Kemudahan Pembacaan:** Sintaks JSON jauh lebih mudah dibaca dan dipahami oleh pengembang (*human-readable*).
+
+3. **Jelaskan alur yang terjadi saat kamu menggunakan fungsi view untuk mengembalikan data portofoliomu dalam bentuk JSON. Mengapa kita perlu melakukan proses serialization pada model Django sebelum datanya dikembalikan?**
+   > * **Alur Pengembalian JSON:**
+   >   1. Client mengirimkan permintaan HTTP GET ke endpoint API (misalnya `/api/experience/`).
+   >   2. Fungsi view mengambil query data dari database menggunakan Django ORM (`Experience.objects.all()`).
+   >   3. Data QuerySet di-serialize menjadi format string JSON menggunakan `serializers.serialize('json', data)`.
+   >   4. View mengembalikan objek `HttpResponse(data_json, content_type='application/json')` ke client.
+   > * **Alasan Perlunya Serialization:** Objek QuerySet Django berbentuk instance kelas Python kompleks yang tidak dapat secara langsung dikirimkan melalui protokol HTTP. Serialization berfungsi mentranslasikan objek Python kompleks tersebut menjadi string teks terstruktur (JSON) yang dapat dikirim dan dimengerti oleh sistem/aplikasi client mana pun.
+
+---
+
+### AI Disclosure
+*Pembuatan skrip unit test, komponen modal CSS, refactoring views, serta draf jawaban reflektif dipandu menggunakan Google Gemini.*
