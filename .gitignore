@@ -16,3 +16,7 @@ venv/
 .DS_Store
 .vscode/
 .idea/
+
+.env*
+db.sqlite3
+env/
