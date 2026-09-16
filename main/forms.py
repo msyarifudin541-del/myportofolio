@@ -49,7 +49,6 @@ class ExperienceForm(ModelForm):
         "description",
         "category",
         "thumbnail",
-        "started_at",
         "ended_at",
     ]
     labels = {
@@ -57,7 +56,6 @@ class ExperienceForm(ModelForm):
         "description": "Deskripsi",
         "category": "Kategori",
         "thumbnail": "URL Gambar Thumbnail",
-        "started_at": "Tanggal Mulai",
         "ended_at": "Tanggal Selesai (Kosongkan jika masih berlangsung)",
     }
     widgets = {
@@ -72,6 +70,5 @@ class ExperienceForm(ModelForm):
         ),
         "category": Select(attrs={"class": "form-control"}),
         "thumbnail": URLInput(attrs={"placeholder": "https://..."}),
-        "started_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
         "ended_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
     }
