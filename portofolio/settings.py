@@ -23,6 +23,12 @@ ALLOWED_HOSTS = [
     "muhammad-syarifudin51-myportofolio.pws.cs.ui.ac.id",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://muhammad-syarifudin51-myportofolio.pws.cs.ui.ac.id",
+]
+
 PRODUCTION = os.getenv("PRODUCTION", "False").lower() == "true"
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
