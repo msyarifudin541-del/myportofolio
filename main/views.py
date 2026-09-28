@@ -4,6 +4,8 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from main.forms import ExperienceForm, ProjectForm
 from main.models import Experience, Project
+from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import redirect, render
 
 
 def show_main(request):
@@ -119,3 +121,17 @@ def delete_project(request, project_id):
     project.delete()
     messages.success(request, "Proyek berhasil dihapus!")
   return redirect("main:show_project")
+
+def register(request):
+  form = UserCreationForm(request.POST or None)
+
+  if request.method == "POST" and form.is_valid():
+    form.save()
+    messages.success(request, "Akun berhasil dibuat. Silakan login.")
+    return redirect("main:login")
+
+  context = {
+      "name": "Muhammad Syarifudin",
+      "form": form,
+  }
+  return render(request, "register.html", context)
