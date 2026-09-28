@@ -8,6 +8,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import redirect, render
 from django.contrib.auth import login
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import logout
 
 def show_main(request):
   context = {
@@ -149,3 +150,7 @@ def login_user(request):
       "form": form,
   }
   return render(request, "login.html", context)
+
+def logout_user(request):
+  logout(request)
+  return redirect("main:show_main")
