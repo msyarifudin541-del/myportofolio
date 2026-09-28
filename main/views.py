@@ -157,6 +157,18 @@ def login_user(request):
   }
   return render(request, "login.html", context)
 
-def logout_user(request):
-  logout(request)
-  return redirect("main:show_main")
+def show_main(request):
+  last_login = request.COOKIES.get(
+      'last_login', 'Belum ada sesi login / Cookie tidak ditemukan'
+  )
+  context = {
+      "name": "Muhammad Syarifudin",
+      "npm": "2506657112",
+      "study_program": "S1 Ilmu Komputer",
+      "bio": (
+          "Passionate Computer Science student exploring full-stack web"
+          " development and AI."
+      ),
+      "last_login": last_login,
+  }
+  return render(request, "index.html", context)
