@@ -172,3 +172,9 @@ def show_main(request):
       "last_login": last_login,
   }
   return render(request, "index.html", context)
+
+def logout_user(request):
+  logout(request)
+  response = redirect("main:show_main")
+  response.delete_cookie('last_login')
+  return response
