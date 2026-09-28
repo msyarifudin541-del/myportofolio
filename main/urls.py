@@ -10,6 +10,9 @@ from main.views import (
     show_main,
     show_project,
     update_experience,
+    login_user, 
+    logout_user, 
+    register,
 )
 
 app_name = "main"
