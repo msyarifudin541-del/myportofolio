@@ -190,3 +190,15 @@ def toggle_star(request, project_id):
       project.starred_by.add(request.user)
 
   return redirect("main:show_project")
+
+def get_projects_json(request):
+  title_query = request.GET.get("title", "").strip()
+  projects = Project.objects.all()
+  if title_query:
+    projects = projects.filter(title__icontains=title_query)
+
+  # Tambahkan use_natural_foreign_keys=True
+  projects_json = serializers.serialize(
+      "json", projects, use_natural_foreign_keys=True
+  )
+  return HttpResponse(projects_json, content_type="application/json")
