@@ -10,7 +10,9 @@
             <p class="section-kicker">Perjalanan saya sejauh ini</p>
             <div class="project-header">
                 <h1>Experience</h1>
-                <a href="{% url 'main:create_experience' %}" class="button project-add-button"><span aria-hidden="true">+</span> Tambah Pengalaman</a>
+                {% if user.is_superuser %}
+                    <a href="{% url 'main:create_experience' %}" class="button project-add-button"><span aria-hidden="true">+</span> Tambah Pengalaman</a>
+                {% endif %}
             </div>
 
             <div class="experience-grid">
@@ -31,8 +33,18 @@
 
                         <div class="project-card-actions">
                             <div class="project-actions">
-                                <a href="{% url 'main:update_experience' exp.id %}" class="button button-secondary">Edit</a>
-                                {% include "components/experience_delete_modal.html" with exp=exp %}
+                                {# Include Komponen Star Experience #}
+                                {% include "components/experience_star.html" with experience=exp %}
+
+                                {# Edit: Hanya untuk Superuser atau Editor #}
+                                {% if user.is_superuser or is_editor %}
+                                    <a href="{% url 'main:update_experience' exp.id %}" class="button button-secondary">Edit</a>
+                                {% endif %}
+
+                                {# Hapus: Hanya untuk Superuser #}
+                                {% if user.is_superuser %}
+                                    {% include "components/experience_delete_modal.html" with exp=exp %}
+                                {% endif %}
                             </div>
                         </div>
                     </article>
