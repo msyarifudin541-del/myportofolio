@@ -63,3 +63,24 @@ Bio : Mahasiswa S1 Ilmu Komputer Universitas Indonesia yang antusias dalam bidan
 
 ### AI Disclosure
 *Pembuatan skrip unit test, komponen modal CSS, refactoring views, serta draf jawaban reflektif dipandu menggunakan Google Gemini.*
+
+# Individual Assignment 4: Authentication, Session, Cookies, and Authorization Implementation
+
+## Hak Akses & Peran Pengguna
+Aplikasi portofolio ini mengimplementasikan 4 tingkatan hak akses berbasis peran (authorization):
+1. **Pengunjung (Unauthenticated):** Hanya dapat membaca data portofolio. Aksi yang membutuhkan akun akan mengarahkan pengguna ke halaman login (`/login/`).
+2. **Pengguna Biasa (Authenticated User):** Dapat membaca data portofolio serta memberikan atau membatalkan *star* pada proyek dan pengalaman. Tidak dapat menambah, mengubah, atau menghapus data.
+3. **Editor:** Memiliki hak pengguna biasa ditambah kemampuan untuk mengubah (*update*) data portofolio (`update_experience`). Tidak memiliki hak untuk menambah (*create*) atau menghapus (*delete*) data.
+4. **Pemilik Portofolio (Superuser):** Memiliki hak penuh (*Create, Read, Update, Delete, Star*).
+
+## Langkah-Langkah Implementasi
+1. **Model & Migrasi Star Experience:** Menambahkan field `starred_by` (`ManyToManyField` ke model `User`) pada model `Experience` dan menjalankan migrasi database.
+2. **View & URL Routing Star:** Membuat fungsi `toggle_star_experience` pada `main/views.py` beserta penambahan path URL pada `main/urls.py` dan komponen template `templates/components/experience_star.html`.
+3. **Manajemen Hak Akses & Grup Editor:** Membentuk grup bernama `Editor` melalui Django Admin (`/admin/`) dan menerapkan helper function `is_editor(user)` untuk mengecek keanggotaan grup `request.user.groups.filter(name='Editor').exists()`.
+4. **Restriksi Server-Side & HTTP 403 Forbidden:** Menerapkan dekorator `@login_required` dan melemparkan exception `PermissionDenied` pada view *create*, *update*, dan *delete* sesuai dengan batasan peran 4 tingkat.
+5. **Penyembunyian Elemen UI Template:** Mengatur kondisi `{% if user.is_superuser %}` dan `{% if user.is_superuser or is_editor %}` pada template `experience.html` dan `project.html` agar kontrol aksi (*create, update, delete*) hanya tampil bagi pengguna yang berhak.
+
+## AI Disclosure & Prompting Strategy
+- **Tools yang Digunakan:** Google Gemini.
+- **Strategi Prompting:** Mengirimkan tangkapan layar petunjuk Tugas 4 dan meminta bantuan menyusun kode yang rapi, melakukan refactoring otorisasi berbasis peran, serta membagi commit Git secara bertahap sesuai rubrik penilaian.
+- **Analisis & Penyesuaian Manual:** Memeriksa keakuratan alur otorisasi server-side (`PermissionDenied`), memastikan relasi `ManyToManyField` berjalan tanpa bug pada template, dan memverifikasi integritas endpoint JSON API.
