@@ -20,7 +20,7 @@
                     {% endif %}
             </div>
 
-            <!-- Form Pencarian AJAX (Atribut method dan action dihapus) -->
+            <!-- Form Pencarian AJAX -->
             <form id="project-search-form" class="project-search">
                 <input type="search"
                        id="search-input"
@@ -47,7 +47,7 @@
                 <p>Belum ada proyek yang ditambahkan atau ditemukan.</p>
             </div>
 
-            <!-- Project Grid (Wadah Kosong untuk diisi JavaScript) -->
+            <!-- Project Grid -->
             <div id="grid" class="experience-grid project-grid hide"></div>
         </div>
     </section>
@@ -61,6 +61,7 @@
 <script>
 // Konfigurasi
 const BASE_PROJECTS_ENDPOINT = "{% url 'main:get_projects_json' %}";
+const CREATE_PROJECT_ENDPOINT = "{% url 'main:create_project_ajax' %}"; // Tambahan Langkah 7
 const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
 let projectsAbortController;
 
@@ -71,6 +72,7 @@ const emptyState = document.getElementById('empty');
 const gridContainer = document.getElementById('grid');
 const searchForm = document.getElementById('project-search-form');
 const searchInput = document.getElementById('search-input');
+const projectForm = document.getElementById('project-form'); // Tambahan Langkah 7
 
 // Menyembunyikan/Menampilkan section halaman
 function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
@@ -185,7 +187,7 @@ function searchProjects() {
     fetchProjects(searchInput.value.trim());
 }
 
-// Event Handler: Mengetik di kolom pencarian (Live Search dengan Debouncing)
+// Event Handler: Mengetik di kolom pencarian
 searchInput.addEventListener("input", function() {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(function() {
@@ -196,13 +198,70 @@ searchInput.addEventListener("input", function() {
 // Event Handler: Menekan Enter atau Klik Tombol Cari
 searchForm.addEventListener("submit", function(event) {
     event.preventDefault();
-    clearTimeout(searchDebounceTimer); // Batalkan timer yang sedang berjalan
+    clearTimeout(searchDebounceTimer);
     searchProjects();
 });
 
 function closeProjectModal() {
-        document.getElementById("add-project-modal").hidePopover();
+    document.getElementById("add-project-modal").hidePopover();
+}
+
+// --- TAMBAHAN LANGKAH 7: Mengambil Token CSRF dari Cookie ---
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
     }
+    return cookieValue;
+}
+
+// --- TAMBAHAN LANGKAH 7: Mengirim Data Form via Fetch API ---
+async function addProject(event) {
+    event.preventDefault();
+
+    const submitButton = projectForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    try {
+        const response = await fetch(CREATE_PROJECT_ENDPOINT, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            body: new FormData(projectForm),
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (response.ok) {
+            projectForm.reset();
+            closeProjectModal();
+            showToast('Berhasil', 'Proyek baru berhasil ditambahkan!', 'success');
+            fetchProjects(searchInput.value.trim());
+        } else {
+            const errorMessages = result.errors
+                ? Object.values(result.errors).flat().map(error => error.message)
+                : [result.message || `Terjadi kesalahan (status ${response.status}).` ];
+            showToast('Gagal menambahkan proyek', errorMessages.join(' '), 'error');
+        }
+    } catch (error) {
+        console.error('Error adding project:', error);
+        showToast('Gagal menambahkan proyek', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+// Pasang Event Listener jika form ada (khusus superuser)
+if (projectForm) {
+    projectForm.addEventListener('submit', addProject);
+}
+
 // Start application saat pertama kali halaman dimuat
 searchProjects();
 </script>
