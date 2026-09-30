@@ -167,13 +167,31 @@ async function fetchProjects(searchQuery = "") {
     }
 }
 
-// Event Handlers untuk Form Search
-searchForm.addEventListener('submit', function(e) {
-    e.preventDefault();
+// Konfigurasi Debounce
+const SEARCH_DEBOUNCE_DELAY = 300;
+let searchDebounceTimer;
+
+// Helper function untuk eksekusi pencarian
+function searchProjects() {
     fetchProjects(searchInput.value.trim());
+}
+
+// Event Handler: Mengetik di kolom pencarian (Live Search dengan Debouncing)
+searchInput.addEventListener("input", function() {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(function() {
+        searchProjects();
+    }, SEARCH_DEBOUNCE_DELAY);
 });
 
-// Start application
-fetchProjects(searchInput.value.trim());
+// Event Handler: Menekan Enter atau Klik Tombol Cari
+searchForm.addEventListener("submit", function(event) {
+    event.preventDefault();
+    clearTimeout(searchDebounceTimer); // Batalkan timer yang sedang berjalan
+    searchProjects();
+});
+
+// Start application saat pertama kali halaman dimuat
+searchProjects();
 </script>
 {% endblock content %}
