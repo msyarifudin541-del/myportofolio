@@ -10,6 +10,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from main.forms import ExperienceForm, ProjectForm
 from main.models import Experience, Project
+from django.http import JsonResponse
 
 
 # --- HELPER FUNCTION UNTUK CEK PERAN EDITOR ---
@@ -18,21 +19,14 @@ def is_editor(user):
 
 
 # --- MAIN & AUTHENTICATION VIEWS ---
-def show_main(request):
-  last_login = request.COOKIES.get(
-      "last_login", "Belum ada sesi login / Cookie tidak ditemukan"
-  )
-  context = {
-      "name": "Muhammad Syarifudin",
-      "npm": "2506657112",
-      "study_program": "S1 Ilmu Komputer",
-      "bio": (
-          "Passionate Computer Science student exploring full-stack web"
-          " development and AI."
-      ),
-      "last_login": last_login,
-  }
-  return render(request, "index.html", context)
+def show_projects(request):
+    title_query = request.GET.get("title", "").strip()
+
+    context = {
+        "name": "Muhammad Syarifudin",
+        "title_query": title_query,
+    }
+    return render(request, "project.html", context)
 
 
 def register(request):
@@ -233,3 +227,32 @@ def toggle_star(request, project_id):
       project.starred_by.add(request.user)
 
   return redirect("main:show_project")
+
+def get_projects_json(request):
+    title_query = request.GET.get("title", "").strip()
+    projects = Project.objects.prefetch_related('starred_by').all()
+
+    if title_query:
+        projects = projects.filter(title__icontains=title_query)
+
+    data = []
+    for project in projects:
+        starred_users = project.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join([u.username for u in starred_users])
+
+        data.append({
+            "pk": str(project.id),
+            "fields": {
+                "title": project.title,
+                "description": project.description,
+                "tech_stack": project.tech_stack,
+                "project_url": project.project_url,
+                "project_image_url": project.project_image_url,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+
+    return JsonResponse(data, safe=False)
