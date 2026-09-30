@@ -256,3 +256,13 @@ def get_projects_json(request):
         })
 
     return JsonResponse(data, safe=False)
+
+def show_projects(request):
+    title_query = request.GET.get("title", "").strip()
+
+    context = {
+        "name": "Burhan",
+        "title_query": title_query,
+        "form": ProjectForm(),
+    }
+    return render(request, "project.html", context)
