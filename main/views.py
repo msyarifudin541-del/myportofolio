@@ -160,7 +160,7 @@ def toggle_star_experience(request, experience_id):
     return redirect("main:show_experience")
 
 
-# --- PROJECT VIEWS (AJAX INTEGRATED - TUTORIAL 05) ---
+# --- PROJECT VIEWS (TUTORIAL 05 - AJAX & FETCH API) ---
 def get_projects_json(request):
     """Mengembalikan data proyek dalam bentuk JSON dengan detail status star[cite: 23, 24]."""
     title_query = request.GET.get("title", "").strip()
@@ -205,6 +205,10 @@ def show_projects(request):
     return render(request, "project.html", context)
 
 
+# Alias untuk mencocokkan impor 'show_project' di main/urls.py[cite: 25]
+show_project = show_projects
+
+
 @require_POST
 def create_project_ajax(request):
     """Menerima dan memproses pembuatan proyek baru via Fetch API/AJAX[cite: 40]."""
@@ -234,7 +238,7 @@ def create_project(request):
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Proyek baru berhasil ditambahkan!")
-        return redirect("main:show_projects")
+        return redirect("main:show_project")
 
     context = {"name": "Muhammad Syarifudin", "form": form}
     return render(request, "projects_form.html", context)
@@ -249,7 +253,7 @@ def delete_project(request, project_id):
     if request.method == "POST":
         project.delete()
         messages.success(request, "Proyek berhasil dihapus!")
-    return redirect("main:show_projects")
+    return redirect("main:show_project")
 
 
 @login_required(login_url="/login/")
@@ -262,4 +266,4 @@ def toggle_star(request, project_id):
         else:
             project.starred_by.add(request.user)
 
-    return redirect("main:show_projects")
+    return redirect("main:show_project")
