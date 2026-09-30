@@ -61,7 +61,7 @@
 <script>
 // Konfigurasi
 const BASE_PROJECTS_ENDPOINT = "{% url 'main:get_projects_json' %}";
-const CREATE_PROJECT_ENDPOINT = "{% url 'main:create_project_ajax' %}"; // Tambahan Langkah 7
+const CREATE_PROJECT_ENDPOINT = "{% url 'main:create_project_ajax' %}";
 const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
 let projectsAbortController;
 
@@ -72,7 +72,7 @@ const emptyState = document.getElementById('empty');
 const gridContainer = document.getElementById('grid');
 const searchForm = document.getElementById('project-search-form');
 const searchInput = document.getElementById('search-input');
-const projectForm = document.getElementById('project-form'); // Tambahan Langkah 7
+const projectForm = document.getElementById('project-form');
 
 // Menyembunyikan/Menampilkan section halaman
 function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
@@ -82,7 +82,17 @@ function displayPageSection({ showLoading = false, showError = false, showEmpty 
     gridContainer.classList.toggle('hide', !showGrid);
 }
 
-// Membuat elemen card project
+// --- TAMBAHAN LANGKAH 8: Mengubah Karakter Khusus HTML Menjadi Entity ---
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+// Membuat elemen card project (Dengan Sanitisasi XSS)
 function buildProjectCardElement(item) {
     const project = item.fields;
     const projectId = item.pk;
@@ -90,12 +100,13 @@ function buildProjectCardElement(item) {
     const articleElement = document.createElement('article');
     articleElement.className = 'experience-card';
 
+    // TAMBAHAN LANGKAH 8: Pembungkusan escapeHtml()
     const imageHtml = project.project_image_url
-        ? `<img src="${project.project_image_url}" alt="Gambar ${project.title}" class="project-image">`
+        ? `<img src="${escapeHtml(project.project_image_url)}" alt="Gambar ${escapeHtml(project.title)}" class="project-image">`
         : '';
 
     const urlHtml = project.project_url
-        ? `<a href="${project.project_url}" class="button">Lihat Project</a>`
+        ? `<a href="${escapeHtml(project.project_url)}" class="button">Lihat Project</a>`
         : '';
 
     const deleteUrl = "{% url 'main:delete_project' '00000000-0000-0000-0000-000000000000' %}"
@@ -112,15 +123,18 @@ function buildProjectCardElement(item) {
 
     const isStarredClass = project.is_starred ? " is-starred" : "";
     const starText = project.is_starred ? "Unstar" : "Star";
+    
+    // TAMBAHAN LANGKAH 8: Pembungkusan escapeHtml()
     const starTitle = project.star_count > 0
-        ? `Dibintangi oleh ${project.starred_by_names}`
+        ? `Dibintangi oleh ${escapeHtml(project.starred_by_names)}`
         : "Jadilah yang pertama memberi star";
 
+    // TAMBAHAN LANGKAH 8: Pembungkusan escapeHtml() pada judul, tech stack, dan deskripsi
     const completeCardHtml = `
         ${imageHtml}
-        <h2>${project.title}</h2>
-        <span class="experience-category">${project.tech_stack}</span>
-        <p class="experience-description">${project.description}</p>
+        <h2>${escapeHtml(project.title)}</h2>
+        <span class="experience-category">${escapeHtml(project.tech_stack)}</span>
+        <p class="experience-description">${escapeHtml(project.description)}</p>
         <div class="project-card-actions">
             <div class="project-actions">
                 ${urlHtml}
@@ -206,7 +220,7 @@ function closeProjectModal() {
     document.getElementById("add-project-modal").hidePopover();
 }
 
-// --- TAMBAHAN LANGKAH 7: Mengambil Token CSRF dari Cookie ---
+// Mengambil Token CSRF dari Cookie
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -222,7 +236,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// --- TAMBAHAN LANGKAH 7: Mengirim Data Form via Fetch API ---
+// Mengirim Data Form via Fetch API
 async function addProject(event) {
     event.preventDefault();
 
