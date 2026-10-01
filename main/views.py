@@ -267,3 +267,48 @@ def toggle_star(request, project_id):
             project.starred_by.add(request.user)
 
     return redirect("main:show_project")
+
+def get_experience_json(request):
+  title_query = request.GET.get("title", "").strip()
+  experiences = Experience.objects.prefetch_related("starred_by").all()
+
+  if title_query:
+    experiences = experiences.filter(title__icontains=title_query)
+
+  data = []
+  for exp in experiences:
+    starred_users = exp.starred_by.all()
+    is_starred = (
+        request.user in starred_users if request.user.is_authenticated else False
+    )
+    starred_by_names = ", ".join([u.username for u in starred_users])
+
+    data.append({
+        "pk": str(exp.id),
+        "fields": {
+            "title": exp.title,
+            "description": exp.description,
+            "category": exp.category,
+            "thumbnail": exp.thumbnail,
+            "ended_at": (
+                exp.ended_at.strftime("%Y-%m-%d %H:%M") if exp.ended_at else None
+            ),
+            "star_count": starred_users.count(),
+            "is_starred": is_starred,
+            "starred_by_names": starred_by_names,
+        },
+    })
+
+  return JsonResponse(data, safe=False)
+
+
+def show_experience(request):
+  title_query = request.GET.get("title", "").strip()
+
+  context = {
+      "name": "Muhammad Syarifudin",
+      "title_query": title_query,
+      "form": ExperienceForm(),
+      "is_editor": is_editor(request.user),
+  }
+  return render(request, "experience.html", context)
