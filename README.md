@@ -84,3 +84,30 @@ Aplikasi portofolio ini mengimplementasikan 4 tingkatan hak akses berbasis peran
 - **Tools yang Digunakan:** Google Gemini.
 - **Strategi Prompting:** Mengirimkan tangkapan layar petunjuk Tugas 4 dan meminta bantuan menyusun kode yang rapi, melakukan refactoring otorisasi berbasis peran, serta membagi commit Git secara bertahap sesuai rubrik penilaian.
 - **Analisis & Penyesuaian Manual:** Memeriksa keakuratan alur otorisasi server-side (`PermissionDenied`), memastikan relasi `ManyToManyField` berjalan tanpa bug pada template, dan memverifikasi integritas endpoint JSON API.
+
+
+### Tugas 5
+
+#### Pertanyaan Reflektif
+
+1. **Jelaskan apa itu *debouncing* dan mengapa teknik ini penting diterapkan pada fitur pencarian yang menggunakan AJAX!**
+   - *Debouncing* adalah teknik untuk menunda eksekusi sebuah fungsi hingga suatu jeda waktu tertentu (misalnya 300 ms) berlalu tanpa adanya pemicu (*event*) baru dari pengguna.
+   - Teknik ini sangat penting pada fitur pencarian AJAX karena tanpa *debouncing*, setiap kali pengguna mengetik satu karakter di kolom pencarian, browser akan langsung mengirimkan permintaan HTTP ke server. Hal ini menyebabkan penumpukan *request* (*server spamming*), membebani kinerja server, serta memperlambat performa browser. Dengan *debouncing*, permintaan AJAX hanya dikirim satu kali setelah pengguna selesai mengetik.
+
+2. **Jelaskan fungsi dari penggunaan `await` ketika kita menggunakan `fetch()`! Apa yang akan terjadi jika kita tidak menggunakan `await`?**
+   - Keyword `await` digunakan di dalam fungsi `async` untuk menghentikan sementara eksekusi baris kode berikutnya hingga *Promise* dari fungsi `fetch()` selesai diproses (*resolved*) dan mengembalikan objek `Response`.
+   - Jika kita tidak menggunakan `await`, fungsi `fetch()` akan langsung mengembalikan objek *Promise* yang masih pending di latar belakang, dan kode di baris berikutnya akan langsung dieksekusi tanpa menunggu balasan data dari server. Akibatnya, variabel yang menampung hasil pemanggilan akan bernilai `Promise` alih-alih data JSON yang diinginkan, sehingga dapat menyebabkan error saat mencoba membaca properti atau me-render data ke antarmuka.
+
+3. **Jelaskan apa itu serangan XSS (*Cross-Site Scripting*) dan mengapa data yang ditampilkan melalui AJAX/JavaScript lebih rentan terhadap serangan ini daripada data yang ditampilkan langsung melalui template Django!**
+   - XSS (*Cross-Site Scripting*) adalah jenis serangan keamanan web di mana penyerang berhasil menyisipkan skrip berbahaya (seperti JavaScript) ke dalam data aplikasi yang kemudian dieksekusi oleh browser pengguna lain.
+   - Data yang ditampilkan langsung melalui template Django secara otomatis mendapatkan perlindungan *auto-escaping*, di mana karakter khusus seperti `<` dan `>` diubah menjadi entitas HTML (`&lt;` dan `&gt;`).
+   - Sebaliknya, ketika menggunakan AJAX/JavaScript, data JSON dimasukkan secara manual ke dalam DOM melalui elemen seperti `innerHTML`. Browser akan menafsirkan karakter teks yang ada di dalam variabel tersebut sebagai tag HTML/JS sungguhan jika tidak dilakukan sanitisasi atau *escaping* khusus (`escapeHtml` atau `strip_tags`), sehingga menyisakan celah keamanan XSS yang siap dimanfaatkan penyerang.
+
+#### AI Disclosure
+- **Tools yang Digunakan**: Gemini.
+- **Strategi Prompting**: Memberikan konteks berupa kode awal projek Django (`views.py`, `urls.py`, `forms.py`, `experience.html`) dan tangkapan layar instruksi modul Tugas 5, lalu meminta panduan penyusunan kode AJAX, penanganan modal, sanitisasi XSS, serta jawaban pertanyaan reflektif.
+- **Bagian yang Dibantu AI**: 
+  1. Pembuatan logika Fetch API, *debouncing*, dan sanitisasi `escapeHtml()` pada JavaScript `experience.html`.
+  2. Pembuatan endpoint `create_experience_ajax` di `views.py` beserta method `clean_<field>` di `forms.py`.
+  3. Penyusunan jawaban pertanyaan reflektif secara terstruktur untuk `README.md`.
+- **Perbaikan Manual**: Melakukan penyesuaian penamaan variabel, pendaftaran rute URL di `main/urls.py`, serta memastikan kecocokan atribut modal popover HTML.

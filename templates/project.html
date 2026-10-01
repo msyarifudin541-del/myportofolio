@@ -1,80 +1,80 @@
 {% extends "base.html" %}
 {% block meta %}
-<title>Projects – {{ name }}</title>
+<title>Experience – {{ name }}</title>
 {% endblock meta %}
 
 {% block content %}
 <main>
     <section class="experience-section" id="experience">
         <div class="container">
-            <p class="section-kicker">Karya yang saya bangun</p>
+            <p class="section-kicker">Perjalanan saya sejauh ini</p>
             <div class="project-header">
-                <h1>Projects</h1>
-                    {% if user.is_superuser %}
+                <h1>Experience</h1>
+                {% if user.is_superuser %}
                     <button type="button"
                             class="button project-add-button"
-                            popovertarget="add-project-modal">
-                        <span aria-hidden="true">+</span>
-                        Tambah Proyek
+                            popovertarget="add-experience-modal">
+                        <span aria-hidden="true">+</span> Tambah Pengalaman
                     </button>
-                    {% endif %}
+                {% endif %}
             </div>
 
             <!-- Form Pencarian AJAX -->
-            <form id="project-search-form" class="project-search">
+            <form id="experience-search-form" class="project-search">
                 <input type="search"
                        id="search-input"
                        name="title"
                        value="{{ title_query }}"
-                       placeholder="Cari berdasarkan nama proyek"
+                       placeholder="Cari pengalaman..."
                        class="project-search__input"
-                       aria-label="Cari berdasarkan nama proyek">
+                       aria-label="Cari pengalaman">
                 <button type="submit" class="button">Cari</button>
             </form>
 
             <!-- Loading State -->
             <div id="loading" class="empty-state hide">
-                <p>Memuat projects...</p>
+                <p>Memuat pengalaman...</p>
             </div>
 
             <!-- Error State -->
             <div id="error" class="empty-state hide">
-                <p>Gagal memuat data projects. Silakan coba lagi.</p>
+                <p>Gagal memuat data pengalaman. Silakan coba lagi.</p>
             </div>
 
             <!-- Empty State -->
             <div id="empty" class="empty-state hide">
-                <p>Belum ada proyek yang ditambahkan atau ditemukan.</p>
+                <p>Belum ada pengalaman yang ditambahkan atau ditemukan.</p>
             </div>
 
-            <!-- Project Grid -->
-            <div id="grid" class="experience-grid project-grid hide"></div>
+            <!-- Grid Container -->
+            <div id="grid" class="experience-grid hide"></div>
         </div>
     </section>
 </main>
 
 {% if user.is_superuser %}
-    {% include "components/project_form_modal.html" %}
+    {% include "components/experience_form_modal.html" %}
 {% endif %}
 
-<!-- Skrip AJAX Inline -->
+<!-- Skrip AJAX, Debouncing, Modal, & Toast (Lengkap) -->
 <script>
-// Konfigurasi
-const BASE_PROJECTS_ENDPOINT = "{% url 'main:get_projects_json' %}";
-const CREATE_PROJECT_ENDPOINT = "{% url 'main:create_project_ajax' %}";
+// Konfigurasi Endpoint & Hak Akses
+const BASE_EXPERIENCE_ENDPOINT = "{% url 'main:get_experience_json' %}";
+const CREATE_EXPERIENCE_ENDPOINT = "{% url 'main:create_experience_ajax' %}";
 const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
-let projectsAbortController;
+const IS_EDITOR = "{{ is_editor|yesno:'true,false' }}" === "true";
+let expAbortController;
 
 // Elemen DOM
 const loadingState = document.getElementById('loading');
 const errorState = document.getElementById('error');
 const emptyState = document.getElementById('empty');
 const gridContainer = document.getElementById('grid');
-const searchForm = document.getElementById('project-search-form');
+const searchForm = document.getElementById('experience-search-form');
 const searchInput = document.getElementById('search-input');
-const projectForm = document.getElementById('project-form');
+const expForm = document.getElementById('experience-form');
 
-// Menyembunyikan/Menampilkan section halaman
+// Menyembunyikan/Menampilkan Section
 function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
     loadingState.classList.toggle('hide', !showLoading);
     errorState.classList.toggle('hide', !showError);
@@ -82,7 +82,7 @@ function displayPageSection({ showLoading = false, showError = false, showEmpty 
     gridContainer.classList.toggle('hide', !showGrid);
 }
 
-// --- TAMBAHAN LANGKAH 8: Mengubah Karakter Khusus HTML Menjadi Entity ---
+// Sanitisasi XSS Client-Side
 function escapeHtml(value) {
     return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -92,135 +92,139 @@ function escapeHtml(value) {
         .replaceAll("'", '&#39;');
 }
 
-// Membuat elemen card project (Dengan Sanitisasi XSS)
-function buildProjectCardElement(item) {
-    const project = item.fields;
-    const projectId = item.pk;
+// Merakit Elemen Card Experience
+function buildExperienceCardElement(item) {
+    const exp = item.fields;
+    const expId = item.pk;
 
-    const articleElement = document.createElement('article');
-    articleElement.className = 'experience-card';
+    const article = document.createElement('article');
+    article.className = 'experience-card';
 
-    // TAMBAHAN LANGKAH 8: Pembungkusan escapeHtml()
-    const imageHtml = project.project_image_url
-        ? `<img src="${escapeHtml(project.project_image_url)}" alt="Gambar ${escapeHtml(project.title)}" class="project-image">`
+    const thumbnailHtml = exp.thumbnail
+        ? `<img src="${escapeHtml(exp.thumbnail)}" alt="${escapeHtml(exp.title)}" class="project-image">`
         : '';
 
-    const urlHtml = project.project_url
-        ? `<a href="${escapeHtml(project.project_url)}" class="button">Lihat Project</a>`
+    const statusHtml = exp.is_ongoing
+        ? `<p class="experience-status">Sedang berlangsung</p>`
+        : `<p class="experience-status">Selesai</p>`;
+
+    const updateUrl = "{% url 'main:update_experience' '00000000-0000-0000-0000-000000000000' %}"
+        .replace('00000000-0000-0000-0000-000000000000', expId);
+    const deleteUrl = "{% url 'main:delete_experience' '00000000-0000-0000-0000-000000000000' %}"
+        .replace('00000000-0000-0000-0000-000000000000', expId);
+    const starUrl = "{% url 'main:toggle_star_experience' '00000000-0000-0000-0000-000000000000' %}"
+        .replace('00000000-0000-0000-0000-000000000000', expId);
+
+    const editButtonHtml = (IS_SUPERUSER || IS_EDITOR)
+        ? `<a href="${updateUrl}" class="button button-secondary">Edit</a>`
         : '';
 
-    const deleteUrl = "{% url 'main:delete_project' '00000000-0000-0000-0000-000000000000' %}"
-        .replace('00000000-0000-0000-0000-000000000000', projectId);
-    const starUrl = "{% url 'main:toggle_star' '00000000-0000-0000-0000-000000000000' %}"
-        .replace('00000000-0000-0000-0000-000000000000', projectId);
-
-    const deleteHtml = IS_SUPERUSER
+    const deleteButtonHtml = IS_SUPERUSER
         ? `<form method="post" action="${deleteUrl}" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" class="button button-danger" onclick="return confirm('Yakin ingin menghapus proyek ini?')">Hapus</button>
+            <button type="submit" class="button button-danger" onclick="return confirm('Yakin ingin menghapus pengalaman ini?')">Hapus</button>
            </form>`
         : '';
 
-    const isStarredClass = project.is_starred ? " is-starred" : "";
-    const starText = project.is_starred ? "Unstar" : "Star";
-    
-    // TAMBAHAN LANGKAH 8: Pembungkusan escapeHtml()
-    const starTitle = project.star_count > 0
-        ? `Dibintangi oleh ${escapeHtml(project.starred_by_names)}`
+    const isStarredClass = exp.is_starred ? " is-starred" : "";
+    const starText = exp.is_starred ? "Unstar" : "Star";
+    const starTitle = exp.star_count > 0
+        ? `Dibintangi oleh ${escapeHtml(exp.starred_by_names)}`
         : "Jadilah yang pertama memberi star";
 
-    // TAMBAHAN LANGKAH 8: Pembungkusan escapeHtml() pada judul, tech stack, dan deskripsi
+    const starFormHtml = `
+        <form method="post" action="${starUrl}" class="star-form">
+            {% csrf_token %}
+            <button type="submit" class="button button-star${isStarredClass}" title="${starTitle}">
+                <span aria-hidden="true">★</span>
+                ${starText}
+                <span class="star-count">${exp.star_count}</span>
+            </button>
+        </form>
+    `;
+
     const completeCardHtml = `
-        ${imageHtml}
-        <h2>${escapeHtml(project.title)}</h2>
-        <span class="experience-category">${escapeHtml(project.tech_stack)}</span>
-        <p class="experience-description">${escapeHtml(project.description)}</p>
+        ${thumbnailHtml}
+        <span class="experience-category">${escapeHtml(exp.category)}</span>
+        <h2>${escapeHtml(exp.title)}</h2>
+        <p class="experience-description">${escapeHtml(exp.description)}</p>
+        ${statusHtml}
         <div class="project-card-actions">
             <div class="project-actions">
-                ${urlHtml}
-                <form method="post" action="${starUrl}" class="star-form">
-                    {% csrf_token %}
-                    <button type="submit" class="button button-star${isStarredClass}" title="${starTitle}">
-                        <span aria-hidden="true">★</span>
-                        ${starText}
-                        <span class="star-count">${project.star_count}</span>
-                    </button>
-                </form>
-                ${deleteHtml}
+                ${starFormHtml}
+                ${editButtonHtml}
+                ${deleteButtonHtml}
             </div>
         </div>
     `;
 
-    articleElement.innerHTML = completeCardHtml;
-    return articleElement;
+    article.innerHTML = completeCardHtml;
+    return article;
 }
 
-// Fetch data project
-async function fetchProjects(searchQuery = "") {
-    if (projectsAbortController) projectsAbortController.abort();
-    projectsAbortController = new AbortController();
+// Fetch Data Pengalaman via AJAX
+async function fetchExperiences(searchQuery = "") {
+    if (expAbortController) expAbortController.abort();
+    expAbortController = new AbortController();
 
     try {
         displayPageSection({ showLoading: true });
 
         const url = searchQuery
-            ? `${BASE_PROJECTS_ENDPOINT}?title=${encodeURIComponent(searchQuery)}`
-            : BASE_PROJECTS_ENDPOINT;
+            ? `${BASE_EXPERIENCE_ENDPOINT}?title=${encodeURIComponent(searchQuery)}`
+            : BASE_EXPERIENCE_ENDPOINT;
 
         const response = await fetch(url, {
             headers: { 'Accept': 'application/json' },
-            signal: projectsAbortController.signal,
+            signal: expAbortController.signal,
         });
 
         if (!response.ok) throw new Error('Failed to fetch data');
 
-        const projectData = await response.json();
+        const expData = await response.json();
 
-        if (projectData.length === 0) {
+        if (expData.length === 0) {
             displayPageSection({ showEmpty: true });
         } else {
             gridContainer.innerHTML = '';
-            projectData.forEach(item => {
-                gridContainer.appendChild(buildProjectCardElement(item));
+            expData.forEach(item => {
+                gridContainer.appendChild(buildExperienceCardElement(item));
             });
             displayPageSection({ showGrid: true });
         }
     } catch (error) {
         if (error.name === 'AbortError') return;
-        console.error('Error loading projects:', error);
+        console.error('Error loading experiences:', error);
         displayPageSection({ showError: true });
     }
 }
 
-// Konfigurasi Debounce
+// Logika Debouncing Search
 const SEARCH_DEBOUNCE_DELAY = 300;
 let searchDebounceTimer;
 
-// Helper function untuk eksekusi pencarian
-function searchProjects() {
-    fetchProjects(searchInput.value.trim());
+function searchExperiences() {
+    fetchExperiences(searchInput.value.trim());
 }
 
-// Event Handler: Mengetik di kolom pencarian
 searchInput.addEventListener("input", function() {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(function() {
-        searchProjects();
+        searchExperiences();
     }, SEARCH_DEBOUNCE_DELAY);
 });
 
-// Event Handler: Menekan Enter atau Klik Tombol Cari
 searchForm.addEventListener("submit", function(event) {
     event.preventDefault();
     clearTimeout(searchDebounceTimer);
-    searchProjects();
+    searchExperiences();
 });
 
-function closeProjectModal() {
-    document.getElementById("add-project-modal").hidePopover();
+function closeExperienceModal() {
+    const modal = document.getElementById("add-experience-modal");
+    if (modal) modal.hidePopover();
 }
 
-// Mengambil Token CSRF dari Cookie
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -236,47 +240,46 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Mengirim Data Form via Fetch API
-async function addProject(event) {
+// Submit Form Tambah Pengalaman via Fetch API
+async function addExperience(event) {
     event.preventDefault();
 
-    const submitButton = projectForm.querySelector('button[type="submit"]');
+    const submitButton = expForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
 
     try {
-        const response = await fetch(CREATE_PROJECT_ENDPOINT, {
+        const response = await fetch(CREATE_EXPERIENCE_ENDPOINT, {
             method: 'POST',
             headers: { 'X-CSRFToken': getCookie('csrftoken') },
-            body: new FormData(projectForm),
+            body: new FormData(expForm),
         });
 
         const result = await response.json().catch(() => ({}));
 
         if (response.ok) {
-            projectForm.reset();
-            closeProjectModal();
-            showToast('Berhasil', 'Proyek baru berhasil ditambahkan!', 'success');
-            fetchProjects(searchInput.value.trim());
+            expForm.reset();
+            closeExperienceModal();
+            showToast('Berhasil', 'Pengalaman baru berhasil ditambahkan!', 'success');
+            fetchExperiences(searchInput.value.trim());
         } else {
             const errorMessages = result.errors
                 ? Object.values(result.errors).flat().map(error => error.message)
                 : [result.message || `Terjadi kesalahan (status ${response.status}).` ];
-            showToast('Gagal menambahkan proyek', errorMessages.join(' '), 'error');
+            showToast('Gagal menambahkan pengalaman', errorMessages.join(' '), 'error');
         }
     } catch (error) {
-        console.error('Error adding project:', error);
-        showToast('Gagal menambahkan proyek', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+        console.error('Error adding experience:', error);
+        showToast('Gagal menambahkan pengalaman', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
     } finally {
         submitButton.disabled = false;
     }
 }
 
-// Pasang Event Listener jika form ada (khusus superuser)
-if (projectForm) {
-    projectForm.addEventListener('submit', addProject);
+if (expForm) {
+    expForm.addEventListener('submit', addExperience);
 }
 
-// Start application saat pertama kali halaman dimuat
-searchProjects();
+// Initial fetch saat halaman pertama dimuat
+searchExperiences();
 </script>
 {% endblock content %}

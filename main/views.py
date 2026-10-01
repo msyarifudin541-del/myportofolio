@@ -4,9 +4,8 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.core import serializers
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -80,24 +79,73 @@ def logout_user(request):
 
 # --- EXPERIENCE VIEWS ---
 def get_experience_json(request):
-    experiences = Experience.objects.all()
-    experiences_json = serializers.serialize("json", experiences)
-    return HttpResponse(experiences_json, content_type="application/json")
+    title_query = request.GET.get("title", "").strip()
+    experiences = Experience.objects.prefetch_related("starred_by").all()
+
+    if title_query:
+        experiences = experiences.filter(title__icontains=title_query)
+
+    data = []
+    for exp in experiences:
+        starred_users = exp.starred_by.all()
+        is_starred = (
+            request.user in starred_users if request.user.is_authenticated else False
+        )
+        starred_by_names = ", ".join([u.username for u in starred_users])
+
+        data.append({
+            "pk": str(exp.id),
+            "fields": {
+                "title": exp.title,
+                "description": exp.description,
+                "category": (
+                    exp.get_category_display()
+                    if hasattr(exp, "get_category_display")
+                    else exp.category
+                ),
+                "thumbnail": exp.thumbnail,
+                "ended_at": (
+                    exp.ended_at.strftime("%Y-%m-%d %H:%M") if exp.ended_at else None
+                ),
+                "is_ongoing": exp.ended_at is None,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            },
+        })
+
+    return JsonResponse(data, safe=False)
 
 
 def show_experience(request):
-    json_response = get_experience_json(request)
-    experiences = serializers.deserialize(
-        "json", json_response.content.decode("utf-8")
-    )
-    experiences = [exp.object for exp in experiences]
+    title_query = request.GET.get("title", "").strip()
 
     context = {
         "name": "Muhammad Syarifudin",
-        "experience_list": experiences,
+        "title_query": title_query,
+        "form": ExperienceForm(),
         "is_editor": is_editor(request.user),
     }
     return render(request, "experience.html", context)
+
+
+@require_POST
+def create_experience_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan pengalaman."},
+            status=403,
+        )
+
+    form = ExperienceForm(request.POST)
+    if form.is_valid():
+        exp = form.save()
+        return JsonResponse(
+            {"message": "Pengalaman berhasil ditambahkan.", "pk": str(exp.id)},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
 
 
 @login_required(login_url="/login/")
@@ -160,11 +208,10 @@ def toggle_star_experience(request, experience_id):
     return redirect("main:show_experience")
 
 
-# --- PROJECT VIEWS (TUTORIAL 05 - AJAX & FETCH API) ---
+# --- PROJECT VIEWS ---
 def get_projects_json(request):
-    """Mengembalikan data proyek dalam bentuk JSON dengan detail status star[cite: 23, 24]."""
     title_query = request.GET.get("title", "").strip()
-    projects = Project.objects.prefetch_related('starred_by').all()
+    projects = Project.objects.prefetch_related("starred_by").all()
 
     if title_query:
         projects = projects.filter(title__icontains=title_query)
@@ -172,7 +219,9 @@ def get_projects_json(request):
     data = []
     for project in projects:
         starred_users = project.starred_by.all()
-        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        is_starred = (
+            request.user in starred_users if request.user.is_authenticated else False
+        )
         starred_by_names = ", ".join([u.username for u in starred_users])
 
         data.append({
@@ -186,14 +235,13 @@ def get_projects_json(request):
                 "star_count": starred_users.count(),
                 "is_starred": is_starred,
                 "starred_by_names": starred_by_names,
-            }
+            },
         })
 
     return JsonResponse(data, safe=False)
 
 
 def show_projects(request):
-    """Menampilkan kerangka utama halaman proyek beserta Form Modal[cite: 25, 34]."""
     title_query = request.GET.get("title", "").strip()
 
     context = {
@@ -205,13 +253,12 @@ def show_projects(request):
     return render(request, "project.html", context)
 
 
-# Alias untuk mencocokkan impor 'show_project' di main/urls.py[cite: 25]
+# Alias agar impor 'show_project' di main/urls.py tetap cocok
 show_project = show_projects
 
 
 @require_POST
 def create_project_ajax(request):
-    """Menerima dan memproses pembuatan proyek baru via Fetch API/AJAX[cite: 40]."""
     if not request.user.is_superuser:
         return JsonResponse(
             {"message": "Hanya pemilik portofolio yang dapat menambahkan proyek."},
@@ -267,70 +314,3 @@ def toggle_star(request, project_id):
             project.starred_by.add(request.user)
 
     return redirect("main:show_project")
-
-def get_experience_json(request):
-  title_query = request.GET.get("title", "").strip()
-  experiences = Experience.objects.prefetch_related("starred_by").all()
-
-  if title_query:
-    experiences = experiences.filter(title__icontains=title_query)
-
-  data = []
-  for exp in experiences:
-    starred_users = exp.starred_by.all()
-    is_starred = (
-        request.user in starred_users if request.user.is_authenticated else False
-    )
-    starred_by_names = ", ".join([u.username for u in starred_users])
-
-    data.append({
-        "pk": str(exp.id),
-        "fields": {
-            "title": exp.title,
-            "description": exp.description,
-            "category": exp.category,
-            "thumbnail": exp.thumbnail,
-            "ended_at": (
-                exp.ended_at.strftime("%Y-%m-%d %H:%M") if exp.ended_at else None
-            ),
-            "star_count": starred_users.count(),
-            "is_starred": is_starred,
-            "starred_by_names": starred_by_names,
-        },
-    })
-
-  return JsonResponse(data, safe=False)
-
-
-def show_experience(request):
-  title_query = request.GET.get("title", "").strip()
-
-  context = {
-      "name": "Muhammad Syarifudin",
-      "title_query": title_query,
-      "form": ExperienceForm(),
-      "is_editor": is_editor(request.user),
-  }
-  return render(request, "experience.html", context)
-
-@require_POST
-def create_experience_ajax(request):
-  if not request.user.is_superuser:
-    return JsonResponse(
-        {
-            "message": (
-                "Hanya pemilik portofolio yang dapat menambahkan pengalaman."
-            )
-        },
-        status=403,
-    )
-
-  form = ExperienceForm(request.POST)
-  if form.is_valid():
-    exp = form.save()
-    return JsonResponse(
-        {"message": "Pengalaman berhasil ditambahkan.", "pk": str(exp.id)},
-        status=201,
-    )
-
-  return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
