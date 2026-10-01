@@ -48,7 +48,7 @@
     </section>
 </main>
 
-<!-- Skrip Fetch API AJAX (Tambahan Commit 3) -->
+<!-- Skrip AJAX & Debouncing (Lengkap Sampai Commit 4) -->
 <script>
 // Konfigurasi Endpoint & Hak Akses
 const BASE_EXPERIENCE_ENDPOINT = "{% url 'main:get_experience_json' %}";
@@ -189,7 +189,30 @@ async function fetchExperiences(searchQuery = "") {
     }
 }
 
+// --- LOGIKA DEBOUNCING (TAMBAHAN COMMIT 4) ---
+const SEARCH_DEBOUNCE_DELAY = 300;
+let searchDebounceTimer;
+
+function searchExperiences() {
+    fetchExperiences(searchInput.value.trim());
+}
+
+// Event Handler: Mengetik di kolom pencarian
+searchInput.addEventListener("input", function() {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(function() {
+        searchExperiences();
+    }, SEARCH_DEBOUNCE_DELAY);
+});
+
+// Event Handler: Menekan Enter atau Klik Tombol Cari
+searchForm.addEventListener("submit", function(event) {
+    event.preventDefault();
+    clearTimeout(searchDebounceTimer);
+    searchExperiences();
+});
+
 // Initial fetch saat pertama kali dimuat
-fetchExperiences(searchInput.value.trim());
+searchExperiences();
 </script>
 {% endblock content %}
