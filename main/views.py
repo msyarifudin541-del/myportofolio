@@ -312,3 +312,25 @@ def show_experience(request):
       "is_editor": is_editor(request.user),
   }
   return render(request, "experience.html", context)
+
+@require_POST
+def create_experience_ajax(request):
+  if not request.user.is_superuser:
+    return JsonResponse(
+        {
+            "message": (
+                "Hanya pemilik portofolio yang dapat menambahkan pengalaman."
+            )
+        },
+        status=403,
+    )
+
+  form = ExperienceForm(request.POST)
+  if form.is_valid():
+    exp = form.save()
+    return JsonResponse(
+        {"message": "Pengalaman berhasil ditambahkan.", "pk": str(exp.id)},
+        status=201,
+    )
+
+  return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
