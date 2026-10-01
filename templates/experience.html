@@ -15,43 +15,35 @@
                 {% endif %}
             </div>
 
-            <div class="experience-grid">
-                {% for exp in experience_list %}
-                    <article class="experience-card">
-                        {% if exp.thumbnail %}
-                            <img src="{{ exp.thumbnail }}" alt="{{ exp.title }}" class="project-image">
-                        {% endif %}
-                        <span class="experience-category">{{ exp.get_category_display }}</span>
-                        <h2>{{ exp.title }}</h2>
-                        <p class="experience-description">{{ exp.description }}</p>
-                        
-                        {% if exp.is_ongoing %}
-                            <p class="experience-status">Sedang berlangsung</p>
-                        {% else %}
-                            <p class="experience-status">Selesai</p>
-                        {% endif %}
+            <!-- Form Pencarian AJAX -->
+            <form id="experience-search-form" class="project-search">
+                <input type="search"
+                       id="search-input"
+                       name="title"
+                       value="{{ title_query }}"
+                       placeholder="Cari pengalaman..."
+                       class="project-search__input"
+                       aria-label="Cari pengalaman">
+                <button type="submit" class="button">Cari</button>
+            </form>
 
-                        <div class="project-card-actions">
-                            <div class="project-actions">
-                                {# Include Komponen Star Experience #}
-                                {% include "components/experience_star.html" with experience=exp %}
-
-                                {# Edit: Hanya untuk Superuser atau Editor #}
-                                {% if user.is_superuser or is_editor %}
-                                    <a href="{% url 'main:update_experience' exp.id %}" class="button button-secondary">Edit</a>
-                                {% endif %}
-
-                                {# Hapus: Hanya untuk Superuser #}
-                                {% if user.is_superuser %}
-                                    {% include "components/experience_delete_modal.html" with exp=exp %}
-                                {% endif %}
-                            </div>
-                        </div>
-                    </article>
-                {% empty %}
-                    <p class="empty-state">Belum ada pengalaman yang ditambahkan.</p>
-                {% endfor %}
+            <!-- Loading State -->
+            <div id="loading" class="empty-state hide">
+                <p>Memuat pengalaman...</p>
             </div>
+
+            <!-- Error State -->
+            <div id="error" class="empty-state hide">
+                <p>Gagal memuat data pengalaman. Silakan coba lagi.</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty" class="empty-state hide">
+                <p>Belum ada pengalaman yang ditambahkan atau ditemukan.</p>
+            </div>
+
+            <!-- Grid Container (Wadah kosong untuk JavaScript) -->
+            <div id="grid" class="experience-grid hide"></div>
         </div>
     </section>
 </main>
