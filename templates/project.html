@@ -1,78 +1,78 @@
 {% extends "base.html" %}
 {% block meta %}
-<title>Experience – {{ name }}</title>
+<title>Projects – {{ name }}</title>
 {% endblock meta %}
 
 {% block content %}
 <main>
-    <section class="experience-section" id="experience">
+    <section class="project-section" id="projects">
         <div class="container">
-            <p class="section-kicker">Perjalanan saya sejauh ini</p>
+            <p class="section-kicker">Karya dan proyek yang telah dibuat</p>
             <div class="project-header">
-                <h1>Experience</h1>
+                <h1>Projects</h1>
                 {% if user.is_superuser %}
                     <button type="button"
                             class="button project-add-button"
-                            popovertarget="add-experience-modal">
-                        <span aria-hidden="true">+</span> Tambah Pengalaman
+                            popovertarget="add-project-modal">
+                        <span aria-hidden="true">+</span> Tambah Proyek
                     </button>
                 {% endif %}
             </div>
 
             <!-- Form Pencarian AJAX -->
-            <form id="experience-search-form" class="project-search">
+            <form id="project-search-form" class="project-search">
                 <input type="search"
                        id="search-input"
                        name="title"
                        value="{{ title_query }}"
-                       placeholder="Cari pengalaman..."
+                       placeholder="Cari proyek..."
                        class="project-search__input"
-                       aria-label="Cari pengalaman">
+                       aria-label="Cari proyek">
                 <button type="submit" class="button">Cari</button>
             </form>
 
             <!-- Loading State -->
             <div id="loading" class="empty-state hide">
-                <p>Memuat pengalaman...</p>
+                <p>Memuat proyek...</p>
             </div>
 
             <!-- Error State -->
             <div id="error" class="empty-state hide">
-                <p>Gagal memuat data pengalaman. Silakan coba lagi.</p>
+                <p>Gagal memuat data proyek. Silakan coba lagi.</p>
             </div>
 
             <!-- Empty State -->
             <div id="empty" class="empty-state hide">
-                <p>Belum ada pengalaman yang ditambahkan atau ditemukan.</p>
+                <p>Belum ada proyek yang ditambahkan atau ditemukan.</p>
             </div>
 
             <!-- Grid Container -->
-            <div id="grid" class="experience-grid hide"></div>
+            <div id="grid" class="project-grid hide"></div>
         </div>
     </section>
 </main>
 
 {% if user.is_superuser %}
-    {% include "components/experience_form_modal.html" %}
+    {% include "components/project_form_modal.html" %}
 {% endif %}
 
-<!-- Skrip AJAX, Debouncing, Modal, & Toast (Lengkap) -->
+<!-- Skrip AJAX, Debouncing, Modal, & Toast -->
 <script>
 // Konfigurasi Endpoint & Hak Akses
-const BASE_EXPERIENCE_ENDPOINT = "{% url 'main:get_experience_json' %}";
-const CREATE_EXPERIENCE_ENDPOINT = "{% url 'main:create_experience_ajax' %}";
+const BASE_PROJECT_ENDPOINT = "{% url 'main:get_project_json' %}";
+const CREATE_PROJECT_ENDPOINT = "{% url 'main:create_project_ajax' %}";
 const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
 const IS_EDITOR = "{{ is_editor|yesno:'true,false' }}" === "true";
-let expAbortController;
+let projectAbortController;
 
 // Elemen DOM
 const loadingState = document.getElementById('loading');
 const errorState = document.getElementById('error');
 const emptyState = document.getElementById('empty');
 const gridContainer = document.getElementById('grid');
-const searchForm = document.getElementById('experience-search-form');
+const searchForm = document.getElementById('project-search-form');
 const searchInput = document.getElementById('search-input');
-const expForm = document.getElementById('experience-form');
+const projectForm = document.getElementById('project-form');
 
 // Menyembunyikan/Menampilkan Section
 function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
@@ -92,28 +92,32 @@ function escapeHtml(value) {
         .replaceAll("'", '&#39;');
 }
 
-// Merakit Elemen Card Experience
-function buildExperienceCardElement(item) {
-    const exp = item.fields;
-    const expId = item.pk;
+// Merakit Elemen Card Project
+function buildProjectCardElement(item) {
+    const proj = item.fields;
+    const projId = item.pk;
 
     const article = document.createElement('article');
-    article.className = 'experience-card';
+    article.className = 'project-card';
 
-    const thumbnailHtml = exp.thumbnail
-        ? `<img src="${escapeHtml(exp.thumbnail)}" alt="${escapeHtml(exp.title)}" class="project-image">`
+    const imageHtml = proj.project_image_url
+        ? `<img src="${escapeHtml(proj.project_image_url)}" alt="${escapeHtml(proj.title)}" class="project-image">`
+        : (proj.image ? `<img src="${escapeHtml(proj.image)}" alt="${escapeHtml(proj.title)}" class="project-image">` : '');
+
+    const techStackHtml = proj.tech_stack
+        ? `<p class="project-tech-stack"><strong>Tech:</strong> ${escapeHtml(proj.tech_stack)}</p>`
         : '';
 
-    const statusHtml = exp.is_ongoing
-        ? `<p class="experience-status">Sedang berlangsung</p>`
-        : `<p class="experience-status">Selesai</p>`;
+    const projectLinkHtml = proj.project_url
+        ? `<a href="${escapeHtml(proj.project_url)}" target="_blank" rel="noopener noreferrer" class="button button-link">Lihat Demo</a>`
+        : '';
 
-    const updateUrl = "{% url 'main:update_experience' '00000000-0000-0000-0000-000000000000' %}"
-        .replace('00000000-0000-0000-0000-000000000000', expId);
-    const deleteUrl = "{% url 'main:delete_experience' '00000000-0000-0000-0000-000000000000' %}"
-        .replace('00000000-0000-0000-0000-000000000000', expId);
-    const starUrl = "{% url 'main:toggle_star_experience' '00000000-0000-0000-0000-000000000000' %}"
-        .replace('00000000-0000-0000-0000-000000000000', expId);
+    const updateUrl = "{% url 'main:update_project' '00000000-0000-0000-0000-000000000000' %}"
+        .replace('00000000-0000-0000-0000-000000000000', projId);
+    const deleteUrl = "{% url 'main:delete_project' '00000000-0000-0000-0000-000000000000' %}"
+        .replace('00000000-0000-0000-0000-000000000000', projId);
+    const starUrl = "{% url 'main:toggle_star_project' '00000000-0000-0000-0000-000000000000' %}"
+        .replace('00000000-0000-0000-0000-000000000000', projId);
 
     const editButtonHtml = (IS_SUPERUSER || IS_EDITOR)
         ? `<a href="${updateUrl}" class="button button-secondary">Edit</a>`
@@ -122,14 +126,14 @@ function buildExperienceCardElement(item) {
     const deleteButtonHtml = IS_SUPERUSER
         ? `<form method="post" action="${deleteUrl}" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" class="button button-danger" onclick="return confirm('Yakin ingin menghapus pengalaman ini?')">Hapus</button>
+            <button type="submit" class="button button-danger" onclick="return confirm('Yakin ingin menghapus proyek ini?')">Hapus</button>
            </form>`
         : '';
 
-    const isStarredClass = exp.is_starred ? " is-starred" : "";
-    const starText = exp.is_starred ? "Unstar" : "Star";
-    const starTitle = exp.star_count > 0
-        ? `Dibintangi oleh ${escapeHtml(exp.starred_by_names)}`
+    const isStarredClass = proj.is_starred ? " is-starred" : "";
+    const starText = proj.is_starred ? "Unstar" : "Star";
+    const starTitle = proj.star_count > 0
+        ? `Dibintangi oleh ${escapeHtml(proj.starred_by_names)}`
         : "Jadilah yang pertama memberi star";
 
     const starFormHtml = `
@@ -138,20 +142,20 @@ function buildExperienceCardElement(item) {
             <button type="submit" class="button button-star${isStarredClass}" title="${starTitle}">
                 <span aria-hidden="true">★</span>
                 ${starText}
-                <span class="star-count">${exp.star_count}</span>
+                <span class="star-count">${proj.star_count}</span>
             </button>
         </form>
     `;
 
     const completeCardHtml = `
-        ${thumbnailHtml}
-        <span class="experience-category">${escapeHtml(exp.category)}</span>
-        <h2>${escapeHtml(exp.title)}</h2>
-        <p class="experience-description">${escapeHtml(exp.description)}</p>
-        ${statusHtml}
+        ${imageHtml}
+        <h2>${escapeHtml(proj.title)}</h2>
+        <p class="project-description">${escapeHtml(proj.description)}</p>
+        ${techStackHtml}
         <div class="project-card-actions">
             <div class="project-actions">
                 ${starFormHtml}
+                ${projectLinkHtml}
                 ${editButtonHtml}
                 ${deleteButtonHtml}
             </div>
@@ -162,39 +166,39 @@ function buildExperienceCardElement(item) {
     return article;
 }
 
-// Fetch Data Pengalaman via AJAX
-async function fetchExperiences(searchQuery = "") {
-    if (expAbortController) expAbortController.abort();
-    expAbortController = new AbortController();
+// Fetch Data Proyek via AJAX
+async function fetchProjects(searchQuery = "") {
+    if (projectAbortController) projectAbortController.abort();
+    projectAbortController = new AbortController();
 
     try {
         displayPageSection({ showLoading: true });
 
         const url = searchQuery
-            ? `${BASE_EXPERIENCE_ENDPOINT}?title=${encodeURIComponent(searchQuery)}`
-            : BASE_EXPERIENCE_ENDPOINT;
+            ? `${BASE_PROJECT_ENDPOINT}?title=${encodeURIComponent(searchQuery)}`
+            : BASE_PROJECT_ENDPOINT;
 
         const response = await fetch(url, {
             headers: { 'Accept': 'application/json' },
-            signal: expAbortController.signal,
+            signal: projectAbortController.signal,
         });
 
         if (!response.ok) throw new Error('Failed to fetch data');
 
-        const expData = await response.json();
+        const projectData = await response.json();
 
-        if (expData.length === 0) {
+        if (projectData.length === 0) {
             displayPageSection({ showEmpty: true });
         } else {
             gridContainer.innerHTML = '';
-            expData.forEach(item => {
-                gridContainer.appendChild(buildExperienceCardElement(item));
+            projectData.forEach(item => {
+                gridContainer.appendChild(buildProjectCardElement(item));
             });
             displayPageSection({ showGrid: true });
         }
     } catch (error) {
         if (error.name === 'AbortError') return;
-        console.error('Error loading experiences:', error);
+        console.error('Error loading projects:', error);
         displayPageSection({ showError: true });
     }
 }
@@ -203,25 +207,25 @@ async function fetchExperiences(searchQuery = "") {
 const SEARCH_DEBOUNCE_DELAY = 300;
 let searchDebounceTimer;
 
-function searchExperiences() {
-    fetchExperiences(searchInput.value.trim());
+function searchProjects() {
+    fetchProjects(searchInput.value.trim());
 }
 
 searchInput.addEventListener("input", function() {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(function() {
-        searchExperiences();
+        searchProjects();
     }, SEARCH_DEBOUNCE_DELAY);
 });
 
 searchForm.addEventListener("submit", function(event) {
     event.preventDefault();
     clearTimeout(searchDebounceTimer);
-    searchExperiences();
+    searchProjects();
 });
 
-function closeExperienceModal() {
-    const modal = document.getElementById("add-experience-modal");
+function closeProjectModal() {
+    const modal = document.getElementById("add-project-modal");
     if (modal) modal.hidePopover();
 }
 
@@ -240,46 +244,46 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Submit Form Tambah Pengalaman via Fetch API
-async function addExperience(event) {
+// Submit Form Tambah Proyek via Fetch API
+async function addProject(event) {
     event.preventDefault();
 
-    const submitButton = expForm.querySelector('button[type="submit"]');
+    const submitButton = projectForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
 
     try {
-        const response = await fetch(CREATE_EXPERIENCE_ENDPOINT, {
+        const response = await fetch(CREATE_PROJECT_ENDPOINT, {
             method: 'POST',
             headers: { 'X-CSRFToken': getCookie('csrftoken') },
-            body: new FormData(expForm),
+            body: new FormData(projectForm),
         });
 
         const result = await response.json().catch(() => ({}));
 
         if (response.ok) {
-            expForm.reset();
-            closeExperienceModal();
-            showToast('Berhasil', 'Pengalaman baru berhasil ditambahkan!', 'success');
-            fetchExperiences(searchInput.value.trim());
+            projectForm.reset();
+            closeProjectModal();
+            showToast('Berhasil', 'Proyek baru berhasil ditambahkan!', 'success');
+            fetchProjects(searchInput.value.trim());
         } else {
             const errorMessages = result.errors
                 ? Object.values(result.errors).flat().map(error => error.message)
                 : [result.message || `Terjadi kesalahan (status ${response.status}).` ];
-            showToast('Gagal menambahkan pengalaman', errorMessages.join(' '), 'error');
+            showToast('Gagal menambahkan proyek', errorMessages.join(' '), 'error');
         }
     } catch (error) {
-        console.error('Error adding experience:', error);
-        showToast('Gagal menambahkan pengalaman', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+        console.error('Error adding project:', error);
+        showToast('Gagal menambahkan proyek', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
     } finally {
         submitButton.disabled = false;
     }
 }
 
-if (expForm) {
-    expForm.addEventListener('submit', addExperience);
+if (projectForm) {
+    projectForm.addEventListener('submit', addProject);
 }
 
 // Initial fetch saat halaman pertama dimuat
-searchExperiences();
+searchProjects();
 </script>
 {% endblock content %}
