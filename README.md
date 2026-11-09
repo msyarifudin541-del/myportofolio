@@ -107,7 +107,79 @@ Aplikasi portofolio ini mengimplementasikan 4 tingkatan hak akses berbasis peran
 - **Tools yang Digunakan**: Gemini.
 - **Strategi Prompting**: Memberikan konteks berupa kode awal projek Django (`views.py`, `urls.py`, `forms.py`, `experience.html`) dan tangkapan layar instruksi modul Tugas 5, lalu meminta panduan penyusunan kode AJAX, penanganan modal, sanitisasi XSS, serta jawaban pertanyaan reflektif.
 - **Bagian yang Dibantu AI**: 
-  1. Pembuatan logika Fetch API, *debouncing*, dan sanitisasi `escapeHtml()` pada JavaScript `experience.html`.
+  1. Pembuatan  Fetch API, *debouncing*, dan sanitisasi `escapeHtml()` pada JavaScript `experience.html`.
   2. Pembuatan endpoint `create_experience_ajax` di `views.py` beserta method `clean_<field>` di `forms.py`.
   3. Penyusunan jawaban pertanyaan reflektif secara terstruktur untuk `README.md`.
 - **Perbaikan Manual**: Melakukan penyesuaian penamaan variabel, pendaftaran rute URL di `main/urls.py`, serta memastikan kecocokan atribut modal popover HTML.
+
+
+# Individual Assignment 6: Integration of Web Service, Asynchronous JS, and Deployment
+
+**Nama** : Muhammad Syarifudin  
+**NPM** : 2506657112  
+**Kelas** : PBP B  
+
+---
+
+## Jawaban Pertanyaan Reflektif
+
+### 1. Jelaskan perbedaan antara synchronous programming dan asynchronous programming!
+* **Synchronous Programming (Sinkron):** Eksekusi kode dilakukan secara urut/sekuensial baris demi baris. Setiap operasi harus menunggu (*blocking*) hingga proses sebelumnya selesai sebelum melanjutkan ke baris berikutnya. Jika terdapat proses yang membutuhkan waktu lama (seperti kueri basis data besar atau pemanggilan API eksternal), seluruh sistem atau antarmuka pengguna (UI) akan membeku (*freeze*).
+* **Asynchronous Programming (Asinkron):** Eksekusi kode berjalan tanpa menghentikan alur utama (*non-blocking*). Tugas-tugas yang membutuhkan waktu lama dijalankan di latar belakang (misalnya menggunakan *Promises*, `async/await`, atau *callback*). Ketika proses latar belakang tersebut selesai, aplikasi akan memperbarui UI atau mengolah data tanpa mengganggu interaksi pengguna yang sedang berlangsung.
+
+---
+
+### 2. Jelaskan bagaimana alur data terjadi saat halaman web menggunakan AJAX untuk berkomunikasi dengan server Django!
+1. **Pemicu Event (Trigger):** Pengguna melakukan aksi di browser (misalnya mengklik tombol, mengirimkan form, atau mengetik di kolom pencarian).
+2. **Pengiriman HTTP Request (AJAX/Fetch API):** JavaScript mengeksekusi fungsi asinkron (`fetch()`) untuk mengirim permintaan HTTP (`GET`, `POST`, `PUT`, atau `DELETE`) berisi payload data (seperti JSON atau `FormData`) ke rute URL Django tanpa melakukan *refresh* halaman secara keseluruhan.
+3. **Pemrosesan di Django (URL Routing & View):**
+   * `urls.py` mengarahkan permintaan ke fungsi *view* yang sesuai.
+   * `views.py` memproses logikanya (misalnya validasi data, kueri database via ORM, atau pengecekan otorisasi).
+4. **Respon HTTP (JSON Response):** View Django mengembalikan respons berformat data terstruktur (misalnya `JsonResponse` atau string hasil *serialization* JSON) beserta status kode HTTP yang sesuai.
+5. **Pembaruan DOM (JavaScript/Browser):** Objek *Promise* dari `fetch()` menerima data JSON dari server, kemudian JavaScript memanipulasi struktur DOM (*Document Object Model*) secara dinamis untuk memperbarui tampilan UI halaman web secara instan.
+
+---
+
+### 3. Mengapa kita disarankan menggunakan Fetch API alih-alih jQuery AJAX untuk menangani permintaan asinkron di JavaScript modern?
+* **Standar Native Browser:** Fetch API adalah standar bawaan (*native*) browser modern, sehingga tidak memerlukan pustaka (*library*) eksternal tambahan. Penggunaan Fetch API memperkecil ukuran total file aplikasi (*bundle size*) dan meningkatkan kecepatan muat halaman.
+* **Berbasis Promise Modern:** Fetch API memanfaatkan `Promise` JavaScript modern yang mendukung sintaks `async/await`. Hal ini membuat penulisan kode asinkron jauh lebih bersih, rapi, dan mudah dibaca dibandingkan sintaks *callback-based* milik jQuery.
+* **Depresiasi jQuery:** jQuery dibuat pada era awal pengembangan web untuk mengatasi ketidakseragaman standar browser. Saat ini, DOM API modern (seperti `querySelector`, `classList`, dan `fetch`) sudah sangat konsisten di seluruh browser utama, membuat ketergantungan pada jQuery menjadi usang.
+
+---
+
+### 4. Jelaskan bagaimana penerapan otorisasi dan validasi data berbasis AJAX pada aplikasi ini untuk memastikan bahwa pengguna yang tidak berhak tidak dapat menambah, mengubah, atau menghapus data portofolio!
+* **Validasi & Otorisasi Server-Side (`views.py`):**
+  * **Sesi Login & Peran:** Sebelum memproses data AJAX yang masuk, fungsi *view* memeriksa otentikasi pengguna (`request.user.is_authenticated`) serta hak aksesnya (misalnya menggunakan helper `is_editor(user)` atau `request.user.is_superuser`). Jika pengguna tidak memenuhi kriteria peran, *view* langsung mengembalikan respons `JsonResponse({'status': 'error', 'message': 'Forbidden'}, status=403)`.
+  * **Sanitisasi & Validasi Form:** Data input AJAX diperiksa menggunakan Django `ModelForm` atau pembersihan manual (`strip_tags` / `clean_<field>`) di server untuk mencegah serangan XSS dan *code injection*.
+* **Perlindungan Keamanan Token (CSRF):** Setiap permintaan AJAX bermetode `POST`, `PUT`, atau `DELETE` wajib melampirkan header `X-CSRFToken` yang diambil dari cookie/meta tag Django untuk mencegah serangan CSRF.
+* **Penyembunyian UI Client-Side (Template DTL):** Komponen tombol aksi (*Create*, *Edit*, *Delete*) hanya dirender ke dalam DOM jika variabel *context* template mengonfirmasi pengguna memiliki hak akses (`{% if user.is_superuser %}`). Namun, validasi server-side tetap menjadi benteng utama jika pengguna mencoba menembus endpoint API secara manual.
+
+---
+
+## Langkah-Langkah Implementasi Tugas 6
+
+1. **Membuat Endpoint API AJAX Baru di `views.py`:**
+   * Menambahkan *view* ber-`decorator` `@csrf_exempt` atau penanganan `X-CSRFToken` khusus untuk membuat, memperbarui, dan menghapus proyek/pengalaman secara asinkron.
+   * Mengembalikan objek `JsonResponse` untuk setiap operasi CRUD (Create, Read, Update, Delete) guna memberikan umpan balik status (sukses/gagal) ke sisi client.
+
+2. **Refactoring JavaScript & Pembaruan DOM Dinamis:**
+   * Mengganti formulir HTML konvensional pada komponen *modal* dengan event listener `addEventListener('submit', ...)` menggunakan Fetch API.
+   * Memasang fungsi render dinamis yang secara otomatis memutar data JSON hasil *fetch* ke dalam elemen HTML kartu proyek/pengalaman tanpa *reload* halaman.
+
+3. **Integrasi Keamanan CSRF & Sanitisasi Input:**
+   * Membaca cookie `csrftoken` menggunakan fungsi pembantuan JavaScript dan menyelipkannya ke dalam header permintaan `fetch()` (`headers: { 'X-CSRFToken': getCookie('csrftoken') }`).
+   * Menyapukan fungsi `escapeHtml()` pada data teks yang dikembalikan oleh API AJAX sebelum disisipkan ke dalam `innerHTML` elemen DOM.
+
+4. **Deployment & Konfigurasi Lingkungan Production:**
+   * Mengonfigurasi berkas `settings.py` untuk mendukung variabel lingkungan (*environment variables*) seperti `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, dan pengaturan file statis (`STATIC_ROOT` & `whitenoise`).
+   * Mengunggah seluruh perubahan ke repositori GitHub dan menyinkronkan deployment aplikasi pada Platform Web Server (PWS) UI.
+
+---
+
+## AI Disclosure & Prompting Strategy
+
+* **Tools yang Digunakan:** Google Gemini.
+* **Strategi Prompting:** 
+  * Memberikan potongan kode JavaScript Fetch API dan `views.py` terkait pemrosesan data AJAX portofolio, lalu meminta optimasi penanganan *error handling* (`try-catch`), ekstraksi token CSRF, serta perapihan sintaks `async/await`.
+  * Meminta penyusunan poin-poin reflektif Tugas 6 berdasarkan standar teknis arsitektur Django dan standar pengembangan web modern.
+* **Analisis & Penyesuaian Manual:** Memeriksa kesesuaian endpoint API AJAX dengan alur otorisasi 4 tingkat yang dibuat pada Tugas 4, memastikan `escapeHtml()` berjalan konsisten pada elemen modal dinamis, serta memverifikasi status deployment pada PWS UI.
