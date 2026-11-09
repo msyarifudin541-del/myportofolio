@@ -4,13 +4,14 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.core import serializers
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
 from main.forms import ExperienceForm, ProjectForm
-from main.models import Contact, Experience, Project
+from main.models import Contact, Experience, Item, Project
 
 
 # --- HELPER FUNCTION UNTUK CEK PERAN EDITOR ---
@@ -131,7 +132,7 @@ def show_experience(request):
 
 @require_POST
 def create_experience_ajax(request):
-    if not request.user.is_superuser:
+    if not request.user.is_authenticated or not request.user.is_superuser:
         return JsonResponse(
             {"message": "Hanya pemilik portofolio yang dapat menambahkan pengalaman."},
             status=403,
@@ -253,12 +254,13 @@ def show_projects(request):
     return render(request, "project.html", context)
 
 
+# Alias untuk routing tunggal/jamak
 show_project = show_projects
 
 
 @require_POST
 def create_project_ajax(request):
-    if not request.user.is_superuser:
+    if not request.user.is_authenticated or not request.user.is_superuser:
         return JsonResponse(
             {"message": "Hanya pemilik portofolio yang dapat menambahkan proyek."},
             status=403,
@@ -335,7 +337,7 @@ def toggle_star(request, project_id):
     return redirect("main:show_project")
 
 
-# --- CONTACT VIEWS (TUTORIAL 06 HTMX) ---
+# --- CONTACT VIEWS (HTMX) ---
 def contact_list(request):
     contacts = Contact.objects.all()
     return render(request, "index.html", {"contacts": contacts})
@@ -388,3 +390,30 @@ def contact_update(request, pk):
     contact.phone = data.get("phone", contact.phone)
     contact.save()
     return render(request, "_contact_row.html", {"contact": contact})
+
+
+# --- ITEM VIEWS (TASK 06 AJAX) ---
+@login_required(login_url="/login/")
+def get_items_json(request):
+    items = Item.objects.filter(user=request.user)
+    return HttpResponse(
+        serializers.serialize("json", items), content_type="application/json"
+    )
+
+
+@login_required(login_url="/login/")
+@require_POST
+def add_item_ajax(request):
+    name = request.POST.get("name")
+    amount = request.POST.get("amount")
+    description = request.POST.get("description")
+
+    if not name or not amount:
+        return JsonResponse({"message": "Name dan Amount wajib diisi."}, status=400)
+
+    new_item = Item(
+        name=name, amount=amount, description=description, user=request.user
+    )
+    new_item.save()
+
+    return HttpResponse(b"CREATED", status=201)

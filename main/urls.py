@@ -28,6 +28,8 @@ from main.views import (
     contact_edit,
     contact_row,
     contact_update,
+    get_items_json, 
+    add_item_ajax,
 )
 
 app_name = "main"
@@ -66,4 +68,6 @@ urlpatterns = [
     path("contacts/<int:pk>/edit/", contact_edit, name="contact_edit"),
     path("contacts/<int:pk>/row/", contact_row, name="contact_row"),
     path("contacts/<int:pk>/update/", contact_update, name="contact_update"),
+    path('get-items/', get_items_json, name='get_items_json'),
+    path('create-ajax/', add_item_ajax, name='add_item_ajax'),
 ]
