@@ -5,12 +5,12 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.exceptions import PermissionDenied
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from main.forms import ExperienceForm, ProjectForm
-from main.models import Experience, Project
+from main.models import Contact, Experience, Project
 
 
 # --- HELPER FUNCTION UNTUK CEK PERAN EDITOR ---
@@ -253,7 +253,6 @@ def show_projects(request):
     return render(request, "project.html", context)
 
 
-# Alias agar impor 'show_project' di main/urls.py tetap cocok
 show_project = show_projects
 
 
@@ -292,6 +291,26 @@ def create_project(request):
 
 
 @login_required(login_url="/login/")
+def update_project(request, project_id):
+    if not (request.user.is_superuser or is_editor(request.user)):
+        raise PermissionDenied
+
+    project = get_object_or_404(Project, pk=project_id)
+    form = ProjectForm(request.POST or None, instance=project)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Proyek berhasil diperbarui!")
+        return redirect("main:show_project")
+
+    context = {
+        "name": "Muhammad Syarifudin",
+        "form": form,
+        "project": project,
+    }
+    return render(request, "projects_form.html", context)
+
+
+@login_required(login_url="/login/")
 def delete_project(request, project_id):
     if not request.user.is_superuser:
         raise PermissionDenied
@@ -314,3 +333,58 @@ def toggle_star(request, project_id):
             project.starred_by.add(request.user)
 
     return redirect("main:show_project")
+
+
+# --- CONTACT VIEWS (TUTORIAL 06 HTMX) ---
+def contact_list(request):
+    contacts = Contact.objects.all()
+    return render(request, "index.html", {"contacts": contacts})
+
+
+def contact_add(request):
+    if request.method == "POST":
+        Contact.objects.create(
+            name=request.POST.get("name"),
+            email=request.POST.get("email"),
+            phone=request.POST.get("phone", ""),
+        )
+    contacts = Contact.objects.all()
+    return render(request, "_contact_rows.html", {"contacts": contacts})
+
+
+@require_http_methods(["DELETE"])
+def contact_delete(request, pk):
+    contact = get_object_or_404(Contact, pk=pk)
+    contact.delete()
+    return HttpResponse("")
+
+
+def contact_search(request):
+    query = request.GET.get("q", "")
+    contacts = (
+        Contact.objects.filter(name__icontains=query)
+        if query
+        else Contact.objects.all()
+    )
+    return render(request, "_contact_rows.html", {"contacts": contacts})
+
+
+def contact_edit(request, pk):
+    contact = get_object_or_404(Contact, pk=pk)
+    return render(request, "_contact_edit_row.html", {"contact": contact})
+
+
+def contact_row(request, pk):
+    contact = get_object_or_404(Contact, pk=pk)
+    return render(request, "_contact_row.html", {"contact": contact})
+
+
+@require_http_methods(["PUT"])
+def contact_update(request, pk):
+    contact = get_object_or_404(Contact, pk=pk)
+    data = QueryDict(request.body)
+    contact.name = data.get("name", contact.name)
+    contact.email = data.get("email", contact.email)
+    contact.phone = data.get("phone", contact.phone)
+    contact.save()
+    return render(request, "_contact_row.html", {"contact": contact})

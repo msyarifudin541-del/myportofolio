@@ -1,0 +1,9 @@
+{% for contact in contacts %}
+    {% include "_contact_row.html" %}
+{% empty %}
+    <tr>
+        <td colspan="4" style="text-align: center; padding: 1rem;">
+            Tidak ada kontak.
+        </td>
+    </tr>
+{% endfor %}
