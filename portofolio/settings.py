@@ -20,6 +20,7 @@ load_dotenv()
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    "10.0.2.2",
     "muhammad-syarifudin51-myportofolio.pws.cs.ui.ac.id",
 ]
 
@@ -55,11 +56,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
     "rest_framework",
+    "rest_framework.authtoken",
     "main",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -168,6 +172,23 @@ WHITENOISE_USE_FINDERS = True
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Django REST Framework configuration
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+}
+
+# Local development CORS settings for Flutter Web (Chrome)
+CORS_ALLOW_ALL_ORIGINS = not PRODUCTION
+if PRODUCTION:
+  CORS_ALLOWED_ORIGINS = [
+      origin.strip()
+      for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+      if origin.strip()
+  ]
 
 # Bypass PostgreSQL version check for PWS compatibility
 from django.db.backends.postgresql import base
